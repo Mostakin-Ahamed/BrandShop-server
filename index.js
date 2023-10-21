@@ -3,7 +3,7 @@ const cors = require('cors');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Middleware
 
@@ -43,23 +43,60 @@ async function run() {
         app.get('/brandDetail/:brandName', async(req, res)=>{
             const brand = req.params.brandName;
             const query={brandName:brand};
-            console.log(query);
             const cursor = carCollection.find(query);
             const result = await cursor.toArray();
             res.send(result)
         })
 
+        app.get('/cart', async(req, res)=>{
+            const cursor = cartCollection.find();
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+        app.get('/update/:id', async(req, res)=>{
+            const id= req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await carCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.put('/update/:id', async(req, res)=>{
+            const id=req.params.id;
+            const filter = {_id: new ObjectId(id)}
+            const options = {upsert: true};
+            const updatedCar = req.body;
+            console.log(updatedCar);
+            const car ={
+                $set:{
+                    productName:updatedCar.productName,
+                    brandName:updatedCar.brandName,
+                    price:updatedCar.price,
+                    rating:updatedCar.rating,
+                    detail:updatedCar.detail,
+                    photo:updatedCar.photo
+                }
+            }
+            const result = await carCollection.updateOne(filter,car,options)
+            res.send(result)
+        })
+
         app.post('/cart', async(req, res)=>{
             const newCart = req.body;
-            const result = await  cartCollection.insertOne(newCart);
+            const result = await cartCollection.insertOne(newCart);
             res.send(result)
         })
 
         app.post('/addProducts', async(req, res)=>{
             const newCar=req.body;
-            console.log(newCar);
             const result = await carCollection.insertOne(newCar);
             res.send(result);
+        })
+
+        app.delete('/cart/:id', async(req, res)=>{
+            const id = req.params.id;
+            const query={_id: new ObjectId(id)}
+            const result= await cartCollection.deleteOne(query);
+            res.send(result)
         })
 
 
